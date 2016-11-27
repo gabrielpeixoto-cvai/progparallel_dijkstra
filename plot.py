@@ -11,7 +11,7 @@ ax1.set_title("Dijkstra Serial Execution")
 ax1.set_xlabel('Number of Vertices')
 ax1.set_ylabel('Time (ms)')
 
-plt.plot(*np.loadtxt("result.txt",unpack=True), linewidth=2.0)#, label='serial')
+plt.plot(*np.loadtxt("data_serial.dat",unpack=True), linewidth=2.0)#, label='serial')
 
 leg = ax1.legend()
 
