@@ -136,7 +136,7 @@ int main(int argc, char** argv){
 
     struct timeval t2;
     gettimeofday(&t2, 0);
-    printf("%d %f\n", nVertices, (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
+    printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
 
     //gettimeofday(&tv, 0);
     //long t2 = tv.tv_sec*1000 + tv.tv_usec/1000;
