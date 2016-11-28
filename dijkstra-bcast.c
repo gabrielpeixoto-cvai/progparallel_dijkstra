@@ -10,29 +10,54 @@
 #include<math.h>
 
 // Number of vertices in the graph and number of threads of pthread
-#define V 9
+//#define V 9
 #define NUM_THREADS 2
 
-int dist[V];     // The output array.  dist[i] will hold the shortest distance from src to i
+int *dist;     // The output array.  dist[i] will hold the shortest distance from src to i
 
-bool sptSet[V]; // sptSet[i] will true if vertex i is included in shortest path tree or shortest distance from src to i is finalized
+bool *sptSet; // sptSet[i] will true if vertex i is included in shortest path tree or shortest distance from src to i is finalized
+
+int V;
 
 int i, v, count,my_rank, p;
 
-//Graph
-int graph[V][V] = {{0, 4, 0, 0, 0, 0, 0, 8, 0},
-{4, 0, 8, 0, 0, 0, 0, 11, 0},
-{0, 8, 0, 7, 0, 4, 0, 0, 2},
-{0, 0, 7, 0, 9, 14, 0, 0, 0},
-{0, 0, 0, 9, 0, 10, 0, 0, 0},
-{0, 0, 4, 14, 10, 0, 2, 0, 0},
-{0, 0, 0, 0, 0, 2, 0, 1, 6},
-{8, 11, 0, 0, 0, 0, 1, 0, 7},
-{0, 0, 2, 0, 0, 0, 6, 7, 0}
+struct Graph {
+    int nVertices;
+    int **w;
 };
+
+struct Graph *createRandomGraph(int nVertices, int nArestas, int seed) {
+
+    int k,v;
+    srandom(seed);
+
+    struct Graph *graph = (struct Graph *) malloc( sizeof(struct Graph) );
+    graph->nVertices = nVertices;
+    graph->w = (int **) malloc( sizeof(int *)  * nVertices );
+    for (v=0; v<nVertices; v++) {
+        graph->w[v] = (int *) malloc( sizeof(int) * nVertices );
+        for (k=0; k<nVertices; k++)
+            graph->w[v][k] = 0; // Division prevents overflows
+    }
+
+    for (k=0; k<nArestas; k++) {
+        int source = random() % nVertices;
+        int dest   = random() % nVertices;
+        while (source == dest)
+            dest = random() % nVertices;
+
+        int w      = 1 + (random() % 10);
+        graph->w[source][ dest ] = w;
+        graph->w[dest][ source ] = w;
+    }
+
+    return graph;
+}
+
 
 //Create pthread
 pthread_t threads[NUM_THREADS];
+struct Graph *graph;
 
 //Struct to be passed as an argument to the threads
 struct data{
@@ -54,9 +79,9 @@ int current;
 // u to current, and total weight of path from src to  current through u is
 // smaller than value of dist[current]
 for(current=tid; current<V;current+=NUM_THREADS){
-    if (!sptSet[current] && graph[u][current] && dist[u] != INT_MAX){
-        if(dist[u]+graph[u][current] < dist[current]){
-            dist[current] = dist[u] + graph[u][current];
+    if (!sptSet[current] && graph->w[u][current] && dist[u] != INT_MAX){
+        if(dist[u]+graph->w[u][current] < dist[current]){
+            dist[current] = dist[u] + graph->w[u][current];
         }
     }
 }
@@ -90,7 +115,7 @@ return 0;
 
 // Funtion that implements Dijkstra's single source shortest path algorithm
 // for a graph represented using adjacency matrix representation
-void dijkstra(int graph[V][V], int src)
+void dijkstra(struct Graph *graph, int src)
 {
 
 //Code snippet to be performed once
@@ -109,47 +134,47 @@ for(count=0;count<V;count++)
     //Process zero performs two broadcasts to send the dist and sptSet to other processes
     MPI_Bcast(dist, V, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(sptSet, V, MPI_INT, 0, MPI_COMM_WORLD);
-    
+
     // Pick the minimum distance vertex from the set of vertices not
     // yet processed. u is always equal to src in first iteration.
     //int u = minDistance(dist, sptSet);
     int min = INT_MAX, min_index;
     int u; //u will receive the global minimum distance
-    
+
     //Find the local minimum distance
     for (v = my_rank; v < V; v+=p){
         if (sptSet[v] == false && dist[v] <= min)
             min = dist[v], min_index = v;
     }
-    
+
     //Barrier
     MPI_Barrier(MPI_COMM_WORLD);
-    
-    
+
+
     //Find the global minimum distance and the vertex that has the minimum distance
     struct{int val; int node;}in, out;
     in.val=min;
     in.node=min_index;
-    
+
     //Reduction to find the global minimum distance and the vertex that has the minimum distance
     MPI_Reduce(&in, &out, 1,MPI_2INT, MPI_MINLOC, 0, MPI_COMM_WORLD);
-    
+
     //Critical code snippet
     if(my_rank==0){
     u=out.node;
-        
+
     // Mark the picked vertex as processed
     sptSet[u] = true;
-    
+
     //Create structure
     struct data *val= (struct data *)malloc(V * sizeof(struct data));
-    
+
         //Set val values and create threads
         for (v = 0; v < NUM_THREADS; v++){
             val[v].tid=v;
             val[v].u=u;
             pthread_create(&threads[v], NULL, update,  val+v);
-            
+
         }
         //Join
         for(v=0;v<NUM_THREADS;v++){
@@ -159,33 +184,45 @@ for(count=0;count<V;count++)
 }
 
 // Print the constructed distance array just once
-if(my_rank==0)
-printSolution(dist, V);
+//if(my_rank==0)
+//printSolution(dist, V);
 }
 
 //Main
-int main(int argc, char *argv[])
-{
-struct timeval tv;
-gettimeofday(&tv, 0);
-long t1 = tv.tv_sec*1000 + tv.tv_usec/1000;
+int main(int argc, char *argv[]){
 
-//MPI components
-MPI_Init (&argc, &argv);
-MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
-MPI_Comm_size (MPI_COMM_WORLD, &p);
+  int i = 1, v;
+  int nVertices = atoi(argv[1]);
+  int nArestas  = nVertices*10;
+  int seed = i;
 
-//Apply algorithm
-dijkstra(graph, 0);
+  V = nVertices;
 
-//Calculate execution time
-if(my_rank==0){
-gettimeofday(&tv, 0);
-long t2 = tv.tv_sec*1000 + tv.tv_usec/1000;
-printf ("Test finished. %ldms.\n", t2-t1);
-}
+  graph = createRandomGraph(nVertices, nArestas, seed);
 
-MPI_Finalize();
+  dist = (int *)malloc(nVertices*sizeof(int));
+  sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
-return 0;
+  //MPI components
+  MPI_Init (&argc, &argv);
+  MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
+  MPI_Comm_size (MPI_COMM_WORLD, &p);
+
+  struct timeval t1;
+  gettimeofday(&t1, 0);
+
+  //Apply algorithm
+  dijkstra(graph, 0);
+
+  //Calculate execution time
+  if(my_rank==0){
+    struct timeval t2;
+    gettimeofday(&t2, 0);
+
+    printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
+  }
+
+  MPI_Finalize();
+
+  return 0;
 }
