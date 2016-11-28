@@ -1,7 +1,8 @@
 #!/bin/bash
 rm -rf result.txt
 
-gcc dijkstra-original-randGraph.c -lm -lpthread
+#gcc dijkstra-original-randGraph.c -lm -lpthread
+gcc dijkstra-pthread.c -lm -lpthread
 
 for (( i=10; i<=40000; i=i+1000 ))
 do
