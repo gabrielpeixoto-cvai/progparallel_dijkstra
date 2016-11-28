@@ -147,7 +147,7 @@ for(count=0;count<V;count++)
 // Print the constructed distance array just once
 //if(my_rank==0)
 //    printSolution(dist, V);
-//}
+}
 
 //Main
 int main(int argc, char *argv[]){
@@ -166,13 +166,13 @@ int main(int argc, char *argv[]){
 
   V = nVertices;
 
-  struct timeval t1;
-  gettimeofday(&t1, 0);
-
   //MPI components
   MPI_Init (&argc, &argv);
   MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
   MPI_Comm_size (MPI_COMM_WORLD, &p);
+
+  struct timeval t1;
+  gettimeofday(&t1, 0);
 
   //Apply algorithm
   dijkstra(graph, 0, nVertices);
