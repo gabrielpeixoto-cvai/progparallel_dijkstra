@@ -9,7 +9,7 @@
 
 // Number of vertices in the graph and number of threads of pthread
 //#define V 9
-#define NUM_THREADS 2
+#define NUM_THREADS 8
 
 int *dist;// The output array, dist[i] will hold the shortest distance from src to i
 
@@ -151,7 +151,7 @@ for(count=0;count<V;count++)
 }
 
 // Print the constructed distance array
-printSolution(dist, V);
+//printSolution(dist, V);
 }
 
 //Main
@@ -187,7 +187,7 @@ int main(int argc, char** argv){
   //long t2 = tv.tv_sec*1000 + tv.tv_usec/1000;
   //printf ("Test finished. %ldms.\n", t2-t1);
 
-  printf("%d %f\n", nVertices, (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
+  printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
 
   for (v=0; v<nVertices; v++)
      free(graph->w[v]);
