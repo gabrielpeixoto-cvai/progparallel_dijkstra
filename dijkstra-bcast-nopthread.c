@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <mpi.h>
-#include<math.h>
+#include <math.h>
 
 // Number of vertices in the graph and number of threads of pthread
 //#define V 9
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]){
   if(my_rank==0){
     graph = createRandomGraph(nVertices, nArestas, seed);
   }
-  
+
   dist = (int *)malloc(nVertices*sizeof(int));
   sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
