@@ -17,7 +17,7 @@ do
     #if pthread
     #run=$(./a.out $i)
     #if openmpi
-    run=$(mpiexec -n 2 a.out $i)
+    run=$( mpiexec -n 4 a.out $i )
     cnt=$(echo "${cnt}+${run}"|bc)
   done
   mean_avg=$(echo "${cnt}/10" | bc -l)
