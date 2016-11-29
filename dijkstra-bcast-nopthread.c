@@ -156,11 +156,13 @@ int main(int argc, char *argv[]){
   int nVertices = atoi(argv[1]);
   int nArestas  = nVertices*10;
   int seed = i;
+  struct Graph *graph;
 
   //printf("creating graph\n");
-
-  struct Graph *graph = createRandomGraph(nVertices, nArestas, seed);
-
+  if(my_rank==0){
+    graph = createRandomGraph(nVertices, nArestas, seed);
+  }
+  
   dist = (int *)malloc(nVertices*sizeof(int));
   sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
@@ -182,12 +184,12 @@ int main(int argc, char *argv[]){
     struct timeval t2;
     gettimeofday(&t2, 0);
     printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
-
+  }
     for (v=0; v<nVertices; v++)
 	     free(graph->w[v]);
 	  free(graph->w);
 	  free(graph);
-  }
+  //}
 
 MPI_Finalize();
 
