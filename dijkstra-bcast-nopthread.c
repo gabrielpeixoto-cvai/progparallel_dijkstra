@@ -102,7 +102,7 @@ for(count=0;count<V;count++)
     //Process zero performs two broadcasts to send the dist and sptSet to other processes
     MPI_Bcast(dist, V, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(sptSet, V, MPI_C_BOOL, 0, MPI_COMM_WORLD);
-    printf("broadcasted to %d", my_rank);
+    //printf("broadcasted to %d\n", my_rank);
 
     // Pick the minimum distance vertex from the set of vertices not
     // yet processed. u is always equal to src in first iteration.
