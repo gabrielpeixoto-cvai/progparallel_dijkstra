@@ -9,7 +9,7 @@ rm -rf result.txt
 mpicc dijkstra-bcast-nopthread.c -lm
 
 #if openmpi+pthread
-mpicc dijkstra-bcast.c -lm -lpthread
+#mpicc dijkstra-bcast.c -lm -lpthread
 
 for (( i=24; i<=40024; i=i+1000 ))
 do
