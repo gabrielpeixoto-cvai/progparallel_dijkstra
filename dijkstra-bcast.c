@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <mpi.h>
-#include<math.h>
+#include <math.h>
 
 // Number of vertices in the graph and number of threads of pthread
 //#define V 9
@@ -191,25 +191,22 @@ for(count=0;count<V;count++)
 //Main
 int main(int argc, char *argv[]){
 
-
   //MPI components
   MPI_Init (&argc, &argv);
   MPI_Comm_rank (MPI_COMM_WORLD, &my_rank);
   MPI_Comm_size (MPI_COMM_WORLD, &p);
 
-    int i = 1, v;
-    int nVertices = atoi(argv[1]);
-    int nArestas  = nVertices*10;
-    int seed = i;
+  int i = 1, v;
+  int nVertices = atoi(argv[1]);
+  int nArestas  = nVertices*10;
+  int seed = i;
 
-    V = nVertices;
-  //  if(my_rank==0){
-      graph = createRandomGraph(nVertices, nArestas, seed);
+  V = nVertices;
 
-      dist = (int *)malloc(nVertices*sizeof(int));
-      sptSet = (bool *)malloc(nVertices*sizeof(bool));
+  graph = createRandomGraph(nVertices, nArestas, seed);
 
-  //  }
+  dist = (int *)malloc(nVertices*sizeof(int));
+  sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
   struct timeval t1;
   gettimeofday(&t1, 0);
@@ -223,10 +220,6 @@ int main(int argc, char *argv[]){
     gettimeofday(&t2, 0);
 
     printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
-    for (v=0; v<nVertices; v++)
-       free(graph->w[v]);
-    free(graph->w);
-    free(graph);
   }
 
   MPI_Finalize();
