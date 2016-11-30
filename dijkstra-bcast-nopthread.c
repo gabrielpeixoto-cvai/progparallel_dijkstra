@@ -20,7 +20,9 @@ struct Graph *graph;
 
 int V;
 
-int i, v, count,my_rank, p;
+int i, v, count,my_rank, p, nElemProc;
+
+MPI_Status status;
 
 struct Graph {
     int nVertices;
@@ -97,8 +99,7 @@ if(my_rank==0){
 }
 
 // Find shortest path for all vertices
-for(count=0;count<V;count++)
-{
+for(count=0;count<V;count++){
     //Process zero performs two broadcasts to send the dist and sptSet to other processes
     MPI_Bcast(dist, V, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(sptSet, V, MPI_C_BOOL, 0, MPI_COMM_WORLD);
@@ -124,31 +125,47 @@ for(count=0;count<V;count++)
     in.node=min_index;
 
     //Reduction to find the global minimum distance and the vertex that has the minimum distance
-    MPI_Reduce(&in, &out, 1,MPI_2INT, MPI_MINLOC, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(&in, &out, 1,MPI_2INT, MPI_MINLOC, MPI_COMM_WORLD);
 
-    //Critical code snippet
+
+    u=out.node;
+
+    // Mark the picked vertex as processed
+    sptSet[u] = true;
+
+    // Update dist value of the adjacent vertices of the picked vertex.
+    for ( v = my_rank*nElemProc; v < nElemProc+my_rank*nElemProc; v++){
+
+        // Update dist[v] only if is not in sptSet, there is an edge from
+        // u to v, and total weight of path from src to  v through u is
+        // smaller than current value of dist[v]
+        if (!sptSet[v] && graph->w[u][v] && dist[u] != INT_MAX
+            && dist[u]+graph->w[u][v] < dist[v]){
+            dist[v] = dist[u] + graph->w[u][v];
+
+        }
+    }
+    MPI_Send (dist + nElemProc*my_rank, nElemProc,
+              MPI_INT, 0, 1, MPI_COMM_WORLD);
+    MPI_Send (sptSet + nElemProc*my_rank, nElemProc,
+              MPI_C_BOOL, 0, 1, MPI_COMM_WORLD);
+
     if(my_rank==0){
-        u=out.node;
-
-        // Mark the picked vertex as processed
-        sptSet[u] = true;
-
-        // Update dist value of the adjacent vertices of the picked vertex.
-        for ( v = 0; v < V; v++)
-
-            // Update dist[v] only if is not in sptSet, there is an edge from
-            // u to v, and total weight of path from src to  v through u is
-            // smaller than current value of dist[v]
-            if (!sptSet[v] && graph->w[u][v] && dist[u] != INT_MAX
-                && dist[u]+graph->w[u][v] < dist[v])
-                dist[v] = dist[u] + graph->w[u][v];
+      for(i=0;i<p;i++){
+        MPI_Recv( dist + nElemProc*i, nElemProc,
+                  MPI_INT, i,
+                  1, MPI_COMM_WORLD, &status);
+        MPI_Recv( sptSet + nElemProc*i, nElemProc,
+                  MPI_C_BOOL, i,
+                  1, MPI_COMM_WORLD, &status);
+      }
     }
 
 }
 
 // Print the constructed distance array just once
-//if(my_rank==0)
-//    printSolution(dist, V);
+if(my_rank==0)
+    printSolution(dist, V);
 }
 
 //Main
@@ -165,15 +182,18 @@ int main(int argc, char *argv[]){
   int nArestas  = nVertices*10;
   int seed = i;
 
+
   //only process 0 will use graph
-  if(my_rank==0){
+  //if(my_rank==0){
     graph = createRandomGraph(nVertices, nArestas, seed);
-  }
+  //}
   //shared resources
   dist = (int *)malloc(nVertices*sizeof(int));
   sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
   V = nVertices;
+
+  nElemProc=V/p;
 
   struct timeval t1;
   gettimeofday(&t1, 0);
