@@ -199,17 +199,14 @@ for(count=0;count<V;count++)
         }
         MPI_Send (dist + nElemProc*my_rank, nElemProc,
                   MPI_INT, 0, 1, MPI_COMM_WORLD);
-        MPI_Send (sptSet + nElemProc*my_rank, nElemProc,
-                  MPI_C_BOOL, 0, 1, MPI_COMM_WORLD);
+    
         
         if(my_rank==0){
             for(i=0;i<p;i++){
                 MPI_Recv( dist + nElemProc*i, nElemProc,
                          MPI_INT, i,
                          1, MPI_COMM_WORLD, &status);
-                MPI_Recv( sptSet + nElemProc*i, nElemProc,
-                         MPI_C_BOOL, i,
-                         1, MPI_COMM_WORLD, &status);
+             
             }
         }
 
