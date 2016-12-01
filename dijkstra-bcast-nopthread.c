@@ -171,8 +171,8 @@ for(count=0;count<V;count++){
 }
 
 // Print the constructed distance array just once
-if(my_rank==0)
-    printSolution(dist, V);
+//if(my_rank==0)
+//    printSolution(dist, V);
 }
 
 //Main
