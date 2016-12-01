@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <mpi.h>
 #include <math.h>
-
+MPI_Status status;
 // Number of vertices in the graph and number of threads of pthread
 //#define V 9
 #define NUM_THREADS 2
@@ -19,7 +19,9 @@ bool *sptSet; // sptSet[i] will true if vertex i is included in shortest path tr
 
 int V;
 
-int i, v, count,my_rank, p;
+int i, v, count,my_rank, p, nElemProc;
+
+int *line;
 
 struct Graph {
     int nVertices;
@@ -63,7 +65,7 @@ struct Graph *graph;
 struct data{
 int u;
 int tid;
-
+int rank;
 };
 
 //Function to be performed by each thread to update the distance vector
@@ -73,15 +75,17 @@ void *update(void *param){
 struct data *val= (struct data *)param;
 int u=val->u;
 int tid=val->tid;
+    int rank=val->rank;
 int current;
 
 // Update dist[current] only if is not in sptSet, there is an edge from
 // u to current, and total weight of path from src to  current through u is
 // smaller than value of dist[current]
-for(current=tid; current<V;current+=NUM_THREADS){
-    if (!sptSet[current] && graph->w[u][current] && dist[u] != INT_MAX){
-        if(dist[u]+graph->w[u][current] < dist[current]){
-            dist[current] = dist[u] + graph->w[u][current];
+for(current=tid+nElemProc*rank; current<nElemProc+nElemProc*my_rank;current+=NUM_THREADS){
+    if (!sptSet[current] && line[current] && dist[u] != INT_MAX){
+        if(dist[u]+line[current] < dist[current]){
+            dist[current] = dist[u] +line[current];
+            //printf("Sou [%d, %d] e atualizei %d para %d\n", rank, tid, current, dist[current]);
         }
     }
 }
@@ -94,6 +98,7 @@ int minDistance(int dist[], bool sptSet[])
 {
 // Initialize min value
 int min = INT_MAX, min_index;
+
 //Get the minimum distance and the vertex that has the minimum distance
 for (v = 0; v < V; v++)
     if (sptSet[v] == false && dist[v] <= min)
@@ -131,9 +136,10 @@ dist[src] = 0;
 // Find shortest path for all vertices
 for(count=0;count<V;count++)
 {
+    
     //Process zero performs two broadcasts to send the dist and sptSet to other processes
     MPI_Bcast(dist, V, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(sptSet, V, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(sptSet, V, MPI_C_BOOL, 0, MPI_COMM_WORLD);
 
     // Pick the minimum distance vertex from the set of vertices not
     // yet processed. u is always equal to src in first iteration.
@@ -157,11 +163,21 @@ for(count=0;count<V;count++)
     in.node=min_index;
 
     //Reduction to find the global minimum distance and the vertex that has the minimum distance
-    MPI_Reduce(&in, &out, 1,MPI_2INT, MPI_MINLOC, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(&in, &out, 1,MPI_2INT, MPI_MINLOC, MPI_COMM_WORLD);
 
-    //Critical code snippet
-    if(my_rank==0){
     u=out.node;
+    
+    
+    if(my_rank==0){
+        for(v=0;v<p;v++){
+        MPI_Send (graph->w[u], V, MPI_INT,v , 4, MPI_COMM_WORLD);
+        }
+    }
+    MPI_Recv(line, V,MPI_INT, 0, 4, MPI_COMM_WORLD, &status);
+    
+    
+    
+    
 
     // Mark the picked vertex as processed
     sptSet[u] = true;
@@ -173,6 +189,7 @@ for(count=0;count<V;count++)
         for (v = 0; v < NUM_THREADS; v++){
             val[v].tid=v;
             val[v].u=u;
+            val[v].rank=my_rank;
             pthread_create(&threads[v], NULL, update,  val+v);
 
         }
@@ -180,12 +197,30 @@ for(count=0;count<V;count++)
         for(v=0;v<NUM_THREADS;v++){
             pthread_join(threads[v], NULL);
         }
-    }
+        MPI_Send (dist + nElemProc*my_rank, nElemProc,
+                  MPI_INT, 0, 1, MPI_COMM_WORLD);
+        MPI_Send (sptSet + nElemProc*my_rank, nElemProc,
+                  MPI_C_BOOL, 0, 1, MPI_COMM_WORLD);
+        
+        if(my_rank==0){
+            for(i=0;i<p;i++){
+                MPI_Recv( dist + nElemProc*i, nElemProc,
+                         MPI_INT, i,
+                         1, MPI_COMM_WORLD, &status);
+                MPI_Recv( sptSet + nElemProc*i, nElemProc,
+                         MPI_C_BOOL, i,
+                         1, MPI_COMM_WORLD, &status);
+            }
+        }
+
+    
+    
 }
+    
 
 // Print the constructed distance array just once
-//if(my_rank==0)
-//printSolution(dist, V);
+if(my_rank==0)
+printSolution(dist, V);
 }
 
 //Main
@@ -200,12 +235,16 @@ int main(int argc, char *argv[]){
   int nVertices = atoi(argv[1]);
   int nArestas  = nVertices*10;
   int seed = i;
-
+  
   V = nVertices;
+  nElemProc=V/p;
 
-  graph = createRandomGraph(nVertices, nArestas, seed);
+  if(my_rank==0){
+    graph = createRandomGraph(nVertices, nArestas, seed);
+  }
 
   dist = (int *)malloc(nVertices*sizeof(int));
+  line = (int *)malloc(nVertices*sizeof(int));
   sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
   struct timeval t1;
@@ -220,7 +259,16 @@ int main(int argc, char *argv[]){
     gettimeofday(&t2, 0);
 
     printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
+    
+  //}
+    for (v=0; v<nVertices; v++)
+        free(graph->w[v]);
+    free(graph->w);
+    free(graph);
   }
+  free(dist);
+  free(sptSet);
+  free(line);
 
   MPI_Finalize();
 
