@@ -22,6 +22,8 @@ int V;
 
 int i, v, count,my_rank, p, nElemProc;
 
+int *line;
+
 MPI_Status status;
 
 struct Graph {
@@ -129,6 +131,14 @@ for(count=0;count<V;count++){
 
 
     u=out.node;
+    
+    if(my_rank==0){
+        for(v=0;v<p;v++){
+            MPI_Send (graph->w[u], V, MPI_INT,v , 4, MPI_COMM_WORLD);
+        }
+    }
+    MPI_Recv(line, V,MPI_INT, 0, 4, MPI_COMM_WORLD, &status);
+
 
     // Mark the picked vertex as processed
     sptSet[u] = true;
@@ -139,9 +149,9 @@ for(count=0;count<V;count++){
         // Update dist[v] only if is not in sptSet, there is an edge from
         // u to v, and total weight of path from src to  v through u is
         // smaller than current value of dist[v]
-        if (!sptSet[v] && graph->w[u][v] && dist[u] != INT_MAX
-            && dist[u]+graph->w[u][v] < dist[v]){
-            dist[v] = dist[u] + graph->w[u][v];
+        if (!sptSet[v] && line[v] && dist[u] != INT_MAX
+            && dist[u]+line[v] < dist[v]){
+            dist[v] = dist[u] + line[v];
 
         }
     }
@@ -184,11 +194,12 @@ int main(int argc, char *argv[]){
 
 
   //only process 0 will use graph
-  //if(my_rank==0){
+  if(my_rank==0){
     graph = createRandomGraph(nVertices, nArestas, seed);
-  //}
+  }
   //shared resources
   dist = (int *)malloc(nVertices*sizeof(int));
+  line = (int *)malloc(nVertices*sizeof(int));
   sptSet = (bool *)malloc(nVertices*sizeof(bool));
 
   V = nVertices;
@@ -207,13 +218,16 @@ int main(int argc, char *argv[]){
     gettimeofday(&t2, 0);
     printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
   //}
+      
     for (v=0; v<nVertices; v++)
 	     free(graph->w[v]);
 	  free(graph->w);
 	  free(graph);
   }
+  
   free(dist);
   free(sptSet);
+  free(line);
 
 
 MPI_Finalize();
