@@ -12,7 +12,7 @@ ax1.set_xlabel('Number of Vertices')
 ax1.set_ylabel('Time (ms)')
 
 plt.plot(*np.loadtxt("data_files/data_serial.dat",unpack=True), linewidth=2.0,label='serial')
-#plt.plot(*np.loadtxt("result.txt",unpack=True), linewidth=2.0,label='serial_mean')
+#plt.plot(*np.loadtxt("result.txt",unpack=True), linewidth=2.0,label='result')
 #plt.plot(*np.loadtxt("data_pthread2n.dat",unpack=True), linewidth=2.0, label='pthread2')
 #plt.plot(*np.loadtxt("data_pthread4n.dat",unpack=True), linewidth=2.0, label='pthread4')
 #plt.plot(*np.loadtxt("data_pthread8n.dat",unpack=True), linewidth=2.0, label='pthread8')
