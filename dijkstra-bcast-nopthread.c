@@ -131,7 +131,7 @@ for(count=0;count<V;count++){
 
 
     u=out.node;
-    
+
     if(my_rank==0){
         for(v=0;v<p;v++){
             MPI_Send (graph->w[u], V, MPI_INT,v , 4, MPI_COMM_WORLD);
@@ -218,13 +218,13 @@ int main(int argc, char *argv[]){
     gettimeofday(&t2, 0);
     printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
   //}
-      
+
     for (v=0; v<nVertices; v++)
 	     free(graph->w[v]);
 	  free(graph->w);
 	  free(graph);
   }
-  
+
   free(dist);
   free(sptSet);
   free(line);
