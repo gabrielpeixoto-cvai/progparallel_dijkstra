@@ -1,17 +1,19 @@
 #!/bin/bash
 rm -rf result.txt
 
+#serial
 #gcc dijkstra-original-randGraph.c -lm -lpthread
-#if pthread
-#gcc dijkstra-original-randGraph.c -lm -lpthread
+
+#pthread
+#gcc dijkstra-pthread.c -lm -lpthread
 
 #if openmpi without pthread
-mpicc dijkstra-bcast-nopthread.c -lm
+#mpicc dijkstra-bcast-nopthread.c -lm
 
 #if openmpi+pthread
-#mpicc dijkstra-bcast.c -lm -lpthread
+mpicc dijkstra-bcast.c -lm -lpthread
 
-for (( i=24; i<=40024; i=i+1000 ))
+for (( i=24; i<=32024; i=i+1000 ))
 do
   cnt=0
   for ((j=0; j<=10; j++))
