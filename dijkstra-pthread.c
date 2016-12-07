@@ -9,7 +9,7 @@
 
 // Number of vertices in the graph and number of threads of pthread
 //#define V 9
-#define NUM_THREADS 8
+#define NUM_THREADS 4
 
 int *dist;// The output array, dist[i] will hold the shortest distance from src to i
 

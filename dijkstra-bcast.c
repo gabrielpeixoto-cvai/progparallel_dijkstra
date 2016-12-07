@@ -136,7 +136,7 @@ dist[src] = 0;
 // Find shortest path for all vertices
 for(count=0;count<V;count++)
 {
-    
+
     //Process zero performs two broadcasts to send the dist and sptSet to other processes
     MPI_Bcast(dist, V, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(sptSet, V, MPI_C_BOOL, 0, MPI_COMM_WORLD);
@@ -166,18 +166,18 @@ for(count=0;count<V;count++)
     MPI_Allreduce(&in, &out, 1,MPI_2INT, MPI_MINLOC, MPI_COMM_WORLD);
 
     u=out.node;
-    
-    
+
+
     if(my_rank==0){
         for(v=0;v<p;v++){
         MPI_Send (graph->w[u], V, MPI_INT,v , 4, MPI_COMM_WORLD);
         }
     }
     MPI_Recv(line, V,MPI_INT, 0, 4, MPI_COMM_WORLD, &status);
-    
-    
-    
-    
+
+
+
+
 
     // Mark the picked vertex as processed
     sptSet[u] = true;
@@ -199,25 +199,25 @@ for(count=0;count<V;count++)
         }
         MPI_Send (dist + nElemProc*my_rank, nElemProc,
                   MPI_INT, 0, 1, MPI_COMM_WORLD);
-    
-        
+
+
         if(my_rank==0){
             for(i=0;i<p;i++){
                 MPI_Recv( dist + nElemProc*i, nElemProc,
                          MPI_INT, i,
                          1, MPI_COMM_WORLD, &status);
-             
+
             }
         }
 
-    
-    
+
+
 }
-    
+
 
 // Print the constructed distance array just once
-if(my_rank==0)
-printSolution(dist, V);
+//if(my_rank==0)
+//printSolution(dist, V);
 }
 
 //Main
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]){
   int nVertices = atoi(argv[1]);
   int nArestas  = nVertices*10;
   int seed = i;
-  
+
   V = nVertices;
   nElemProc=V/p;
 
@@ -256,7 +256,7 @@ int main(int argc, char *argv[]){
     gettimeofday(&t2, 0);
 
     printf("%f\n", (t2.tv_sec*1000. + t2.tv_usec/1000.) - (t1.tv_sec*1000. + t1.tv_usec/1000.));
-    
+
   //}
     for (v=0; v<nVertices; v++)
         free(graph->w[v]);
