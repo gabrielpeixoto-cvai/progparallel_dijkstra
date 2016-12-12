@@ -186,7 +186,7 @@ int main(int argc, char *argv[]){
 
   int i = 1, v;
   int nVertices = atoi(argv[1]);
-  int nArestas  = nVertices*10;
+  int nArestas  = (nVertices*nVertices)/2;
   int seed = i;
 
 
